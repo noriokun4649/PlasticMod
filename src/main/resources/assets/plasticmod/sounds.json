@@ -1,0 +1,22 @@
+{
+  "gun1":{
+    "category":"master",
+    "sounds":["gun1"]
+  },
+  "gun_reload":{
+    "category":"master",
+    "sounds":["gun_reload"]
+  },
+  "gun2":{
+    "category":"master",
+    "sounds":["gun2"]
+  },
+  "pulsegun":{
+    "category":"master",
+    "sounds":["pulsegun"]
+  },
+  "check":{
+    "category":"master",
+    "sounds":["check"]
+  }
+}

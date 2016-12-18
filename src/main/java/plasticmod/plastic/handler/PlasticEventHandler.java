@@ -1,0 +1,108 @@
+package plasticmod.plastic.handler;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import com.mojang.realmsclient.gui.ChatFormatting;
+
+import cpw.mods.fml.client.FMLClientHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.StatCollector;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import plasticmod.plastic.PlasticCore;
+
+public class PlasticEventHandler {
+	/*ワールドに入った時に呼ばれるイベント。PlasticCoreのsubメゾットに引き渡し、バージョンチェック*/
+	@SubscribeEvent
+	public void onEntityJoinWorldEvent(EntityJoinWorldEvent event)
+	{
+		int count;
+		if ( event.world.isRemote && event.entity  instanceof EntityPlayer) {//クライアント処理＆プレイヤー出現認識
+			String ver =sub();
+			PlasticCore.logger(PlasticCore.getLocal("logger.newversion")+ver); //ログに最新バージョンを表示
+			if ( ver.equals(PlasticCore.version) ){//プレイ中のバージョンと最新バージョンが一致したら
+				playerChatMessage(ChatFormatting.YELLOW+StatCollector.translateToLocal("title.matchver.name"));//最新バージョンを使用してると表示
+			}else if(ver ==null || ver.equals("error")){//ネットワークに接続できなかったら
+				playerChatMessage(ChatFormatting.RED+StatCollector.translateToLocal("title.error.name"));
+			}else{//一致しなかったら
+				playerChatMessage(ChatFormatting.GREEN+StatCollector.translateToLocal("title.oldver.name"));
+				playerChatMessage(ChatFormatting.GREEN+StatCollector.translateToLocal("title.newver.name")+ChatFormatting.RED+ver);//最新バージョンをチャットに表示
+				playerChatMessage(ChatFormatting.GREEN+StatCollector.translateToLocal("title.nowver.name")+ChatFormatting.RED+PlasticCore.version);//プレイ中のバージョンをチャットに表示
+			}
+			if (!(sub2(false).equals("error"))){    //情報取得ができたら
+
+				if(sub2(false).equals("infonot")){//情報取得できても情報がなかったら
+					playerChatMessage(ChatFormatting.DARK_GREEN+StatCollector.translateToLocal("title.infonot.name"));//お知らせはないと表示
+				}else{     //情報があったら
+					playerChatMessage(ChatFormatting.DARK_GREEN+StatCollector.translateToLocal("title.info.name"));
+					sub2(true);//情報をドロップボックスのテキストファイルから読み込んで表示
+				}
+			}else{//情報取得できなかったら
+				PlasticCore.loggers.warn("title.infoerror.name");
+				playerChatMessage(ChatFormatting.RED+StatCollector.translateToLocal("title.infoerror.name"));//ネットワークエラー
+			}
+		}
+	}
+	public static void playerChatMessage (String msg){
+		FMLClientHandler.instance().getClient().thePlayer.addChatMessage(new ChatComponentTranslation(msg));
+	}
+	/**
+	 * バージョンチェックメインソース  ログイン時に呼び出されます。
+	 */
+	public static String sub(){
+		String ver =null;
+		try {
+			URL url = new URL("https://dl.dropboxusercontent.com/s/70nzyicyyhrcged/plasticmod_ver.txt");
+			HttpURLConnection http = (HttpURLConnection)url.openConnection();
+			http.setRequestMethod("GET");
+			http.connect();
+			InputStreamReader isr = new InputStreamReader(http.getInputStream(), "Shift_JIS");
+			BufferedReader br = new BufferedReader(isr);
+			String line_buffer;
+			while ( null != (line_buffer = br.readLine() ) ) {
+				ver =line_buffer;
+			}
+			br.close();
+			isr.close();
+			http.disconnect();
+		}
+		catch( Exception e ) {
+			ver ="error";
+			PlasticCore.loggers.warn(PlasticCore.getLocal("logger.versionerror")+e);
+		}
+		return ver;
+	}
+	/**
+	 * バージョンチェックサブソース  ログイン時に呼び出されます。
+	 */
+	public static String sub2(boolean falnd){
+		 String type="infonot";
+		try {
+			URL url1 = new URL("https://dl.dropboxusercontent.com/s/mskrajqcxojqtdj/plasticmod_info.txt");
+			HttpURLConnection http1 = (HttpURLConnection)url1.openConnection();
+			http1.setRequestMethod("GET");
+			http1.connect();
+			InputStreamReader isr1 = new InputStreamReader(http1.getInputStream(), "Shift_JIS");
+			BufferedReader br1 = new BufferedReader(isr1);
+			String line_buffer1;
+			while ( null != (line_buffer1 = br1.readLine() ) ) {
+				if (falnd){
+				PlasticEventHandler.playerChatMessage(ChatFormatting.DARK_GREEN+"[PlasticMOD]"+line_buffer1);
+				}
+				type = line_buffer1;
+			}
+			br1.close();
+			isr1.close();
+			http1.disconnect();
+		}
+		catch( Exception e ) {
+			PlasticCore.loggers.warn(PlasticCore.getLocal("logger.versionerror")+e);
+			type ="error";
+		}
+		return type;
+	}
+}
